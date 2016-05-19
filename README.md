@@ -11,6 +11,7 @@ For more info, tutorials and documentation please visit the [official site](http
 * H2
 * HSQLDB
 * Oracle (experimental)
+* SQLite (experimental)
 
 ##Supported Scala versions
 

@@ -21,6 +21,7 @@ class Connector (url: String, user: String, password: String, poolSize: Int, tim
         case DbType.Hsqldb => new Hsqldb(jdbcConnection)
         case DbType.Postgres => new Postgres(jdbcConnection)
         case DbType.Oracle => new Oracle(jdbcConnection)
+        case DbType.Sqlite => new Sqlite(jdbcConnection)
         case _ => ???
       }
   
