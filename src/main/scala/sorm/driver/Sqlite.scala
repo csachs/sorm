@@ -1,10 +1,35 @@
 package sorm.driver
 
-import sorm._, ddl._, jdbc._
-import sext._, embrace._
-import sql.Sql
+import java.sql.{Connection, SQLException}
+import java.util.regex.Pattern
 
-class Sqlite (protected val connection : JdbcConnection)
+import sorm._
+import ddl._
+import jdbc._
+import sext._
+import embrace._
+import sql.Sql
+import org.joda.time.DateTime
+import sorm.sql.Sql.{Delete, Insert, Union}
+
+private class SqliteJdbcConnection ( override protected val connection : Connection ) extends JdbcConnection(connection) {
+
+  override def executeUpdateAndGetGeneratedKeys
+  ( s : Statement )
+  : List[IndexedSeq[Any]]
+  = {
+    logStatement(s)
+    val js = preparedStatement(s, true)
+    executeLoggingBenchmark(js.executeUpdate())
+    val rs = js.getGeneratedKeys
+    val r = rs.indexedRowsTraversable.toList
+    rs.close()
+    js.close()
+    r
+  }
+}
+
+class Sqlite (protected val rawConnection : JdbcConnection)
   extends DriverConnection
     with StdConnection
     with StdTransaction
@@ -21,8 +46,10 @@ class Sqlite (protected val connection : JdbcConnection)
     with StdNow
 {
 
+  val connection = new SqliteJdbcConnection(rawConnection.getConnection())
+
   override protected def showTablesSql
-  = "SELECT TBL_NAME FROM SQLITE_MASTER WHERE TYPE = 'table'"
+  = "SELECT TBL_NAME FROM SQLITE_MASTER WHERE TYPE = 'table' AND TBL_NAME != 'sqlite_sequence'"
 
   override protected def tableDdl ( t : Table ) : String
   = {
@@ -56,4 +83,42 @@ class Sqlite (protected val connection : JdbcConnection)
       case _id: Long => _id
       case _id: Int => _id.toLong
     }
+
+  override protected def template ( sql : Sql ) : String
+    = sql match {
+    case Insert(table, columns, values) if columns.isEmpty && values.isEmpty =>
+      "INSERT INTO " + quote(table) + " DEFAULT VALUES"
+    case Union(l, r) =>
+      " " + template(l).indent(2).trim + " \n" +
+        "UNION\n" +
+        " " + template(r).indent(2).trim + " \n"
+    case _ => super.template(sql)
+  }
+
+  override def now() : DateTime
+    = DateTime.parse(connection
+        .executeQuery(Statement("SELECT strftime('%Y-%m-%dT%H:%M:%S','now')"))()
+        .head.head
+        .asInstanceOf[String])
+
 }
+
+/*
+import org.sqlite.{Function, SQLiteConnection}
+
+//Function.create(CONNECTION, classOf[Regexp].getSimpleName, new Regexp())
+
+class Regexp() extends Function() {
+  override protected def xFunc = {
+    if (args() != 2) {
+      throw new SQLException("")
+    }
+
+    val pattern = value_text(0)
+    val value = value_text(1)
+
+    result(if(Pattern.matches(pattern, value)) 1 else 0)
+  }
+}
+*/
+

@@ -89,7 +89,7 @@ class JdbcConnection( protected val connection : Connection ) extends Transactio
       }
     }
 
-  private def preparedStatement
+  protected def preparedStatement
     ( stmt : Statement,
       generatedKeys : Boolean = false )
     = {
@@ -106,6 +106,8 @@ class JdbcConnection( protected val connection : Connection ) extends Transactio
 
       s
     }
+
+  def getConnection() = connection
 
   def close() = connection.close()
 }
