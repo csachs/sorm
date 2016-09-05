@@ -12,23 +12,6 @@ import sql.Sql
 import org.joda.time.DateTime
 import sorm.sql.Sql.{Delete, Insert, Union}
 
-private class SqliteJdbcConnection ( override protected val connection : Connection ) extends JdbcConnection(connection) {
-
-  override def executeUpdateAndGetGeneratedKeys
-  ( s : Statement )
-  : List[IndexedSeq[Any]]
-  = {
-    logStatement(s)
-    val js = preparedStatement(s, true)
-    executeLoggingBenchmark(js.executeUpdate())
-    val rs = js.getGeneratedKeys
-    val r = rs.indexedRowsTraversable.toList
-    rs.close()
-    js.close()
-    r
-  }
-}
-
 class Sqlite (protected val rawConnection : JdbcConnection)
   extends DriverConnection
     with StdConnection
@@ -45,6 +28,23 @@ class Sqlite (protected val rawConnection : JdbcConnection)
     with StdDropAllTables
     with StdNow
 {
+
+  class SqliteJdbcConnection ( override protected val connection : Connection ) extends JdbcConnection(connection) {
+
+    override def executeUpdateAndGetGeneratedKeys
+    ( s : Statement )
+    : List[IndexedSeq[Any]]
+    = {
+      logStatement(s)
+      val js = preparedStatement(s, true)
+      executeLoggingBenchmark(js.executeUpdate())
+      val rs = js.getGeneratedKeys
+      val r = rs.indexedRowsTraversable.toList
+      rs.close()
+      js.close()
+      r
+    }
+  }
 
   val connection = new SqliteJdbcConnection(rawConnection.getConnection())
 
