@@ -10,7 +10,7 @@ object TestingInstances {
     = t match {
         case DbType.H2 => "jdbc:h2:mem:test"
         case DbType.Mysql => "jdbc:mysql://localhost/sorm_test"
-        case DbType.Sqlite => "jdbc:sqlite::memory:"
+        case DbType.Sqlite => "jdbc:sqlite:./sorm_test.sq3"
         case DbType.Hsqldb => "jdbc:hsqldb:mem:test"
         case DbType.Derby => "jdbc:derby:memory:test;create=true"
         case DbType.Postgres => "jdbc:postgresql:test"
